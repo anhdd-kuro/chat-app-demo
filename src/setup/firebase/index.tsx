@@ -18,13 +18,25 @@ const firebaseConfig = {
   measurementId: "G-44SBCC6GMN",
 };
 
+let analytics;
+let firestore;
+if (firebaseConfig?.projectId) {
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+
+  if (app.name && typeof window !== "undefined") {
+    analytics = getAnalytics(app);
+  }
+
+  // Access Firebase services using shorthand notation
+  firestore = getFirestore();
+}
+
 // Initialize Firebase
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-export const analytics = getAnalytics(app);
-
-export const db = getFirestore(app);
 
 export const auth = getAuth(app);
 
 export const provider = new GoogleAuthProvider();
+
+export { analytics, firestore };
