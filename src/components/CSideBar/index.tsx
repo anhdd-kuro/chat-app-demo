@@ -77,7 +77,6 @@ const StyledHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  height: 80px;
   border-bottom: 1px solid whitesmoke;
   position: sticky;
   top: 0;
@@ -94,7 +93,7 @@ const StyledHeader = styled.div`
 const StyledSearch = styled.div`
   display: flex;
   align-items: center;
-  padding: 15px;
+  padding: 1rem;
   border-radius: 2px;
 `;
 
@@ -105,6 +104,7 @@ const StyledSearchInput = styled.input`
 `;
 
 const StyledSideBarButton = styled(Button)`
+  font-weight: 700;
   width: 100%;
   border-top: 1px solid whitesmoke;
   border-bottom: 1px solid whitesmoke;
