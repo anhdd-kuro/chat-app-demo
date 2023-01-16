@@ -1,3 +1,4 @@
+import { auth } from "@/setup/firebase";
 import { Avatar, Button, IconButton, Tooltip } from "@mui/material";
 import styled from "styled-components";
 import ChatIcon from "@mui/icons-material/Chat";
@@ -5,6 +6,7 @@ import MoreVertical from "@mui/icons-material/MoreVert";
 import LogOutIcon from "@mui/icons-material/Logout";
 import SearchIcon from "@mui/icons-material/Search";
 import { useState } from "react";
+import { signOut } from "firebase/auth";
 
 export const CSideBar = () => {
   const [isNewConversationDialogOpen, setIsNewConversationDialogOpen] = useState(false);
@@ -13,6 +15,14 @@ export const CSideBar = () => {
   const toggleNewConversationDialog = (isOpen: boolean) => {
     setIsNewConversationDialogOpen(isOpen);
     if (!isOpen) setRecipientEmail("");
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.log("ERROR LOGGING OUT", error);
+    }
   };
 
   return (
@@ -26,12 +36,12 @@ export const CSideBar = () => {
           <IconButton>
             <ChatIcon />
           </IconButton>
-          <MoreVertical>
-            <ChatIcon />
-          </MoreVertical>
-          <LogOutIcon>
-            <ChatIcon />
-          </LogOutIcon>
+          <IconButton>
+            <MoreVertical />
+          </IconButton>
+          <IconButton onClick={logout}>
+            <LogOutIcon />
+          </IconButton>
         </div>
       </StyledHeader>
       <StyledSearch>
