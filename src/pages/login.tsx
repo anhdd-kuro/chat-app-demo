@@ -1,5 +1,6 @@
 import { auth } from "@/setup/firebase";
-import WhatsAppLogo from "@mui/icons-material/LogoDev";
+import { CLogo } from "@/components/CLogo";
+import { CLoading } from "@/components";
 import Button from "@mui/material/Button";
 import Head from "next/head";
 import styled from "styled-components";
@@ -35,7 +36,7 @@ const Login = () => {
 
   if (_user || loggedInUser) {
     router.push("/");
-    return <div>Redirecting...</div>;
+    return <CLoading />;
   }
 
   const signIn = () => {
@@ -50,7 +51,7 @@ const Login = () => {
 
       <StyledLoginContainer>
         <StyledImageWrapper>
-          <WhatsAppLogo style={{ fontSize: "100px" }} />
+          <CLogo />
         </StyledImageWrapper>
 
         <Button variant="outlined" onClick={signIn}>
