@@ -6,7 +6,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import MoreVertical from "@mui/icons-material/MoreVert";
 import LogOutIcon from "@mui/icons-material/Logout";
 import SearchIcon from "@mui/icons-material/Search";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { signOut } from "firebase/auth";
 import { z } from "zod";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -22,6 +22,8 @@ export const CSideBar = () => {
 
   const [recipientEmail, setRecipientEmail] = useState("");
 
+  const [searchConversationByEmail, setSearchConversationByEmail] = useState("");
+
   const isInvitingSelf = recipientEmail === loggedInUser?.email;
 
   const isValidEmail = z.string().email().safeParse(recipientEmail).success;
@@ -33,6 +35,13 @@ export const CSideBar = () => {
   );
 
   const [conversationsSnapshot] = useCollection(queryGetConversationsForCurrentUser);
+
+  const conversationFilterBySearch = useMemo(() => {
+    return conversationsSnapshot?.docs.filter((conversation) => {
+      const conversationData = conversation.data() as Conversation;
+      return conversationData.users.some((email) => email.includes(searchConversationByEmail));
+    });
+  }, [conversationsSnapshot, searchConversationByEmail]);
 
   const isConversationAlreadyExists = (recipientEmail: string) =>
     conversationsSnapshot?.docs.find((conversation) =>
@@ -91,7 +100,10 @@ export const CSideBar = () => {
       </StyledHeader>
       <StyledSearch>
         <SearchIcon />
-        <StyledSearchInput placeholder="Search in conversations" />
+        <StyledSearchInput
+          onChange={(e) => setSearchConversationByEmail(e.target.value)}
+          placeholder="Search in conversations"
+        />
       </StyledSearch>
 
       <StyledSideBarButton
@@ -103,7 +115,7 @@ export const CSideBar = () => {
       </StyledSideBarButton>
 
       {/* List of conversations */}
-      {conversationsSnapshot?.docs.map((conversation) => (
+      {conversationFilterBySearch?.map((conversation) => (
         <CConversationSelect
           key={conversation.id}
           id={conversation.id}
