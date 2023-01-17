@@ -1,6 +1,6 @@
-import { useRecipient } from "@/hooks";
 import Avatar from "@mui/material/Avatar";
 import styled from "styled-components";
+import type { useRecipient } from "@/hooks";
 
 type Props = ReturnType<typeof useRecipient>;
 

@@ -1,8 +1,8 @@
 import { CRecipientAvatar } from "../CRecipientAvatar";
-import { Conversation } from "@/types";
 import { useRecipient } from "@/hooks";
 import { useRouter } from "next/router";
 import styled from "styled-components";
+import type { Conversation } from "@/types";
 
 const StyledContainer = styled.div`
   display: flex;
