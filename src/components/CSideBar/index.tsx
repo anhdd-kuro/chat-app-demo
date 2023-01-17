@@ -1,6 +1,5 @@
-import { CDialog } from "../CDialog";
-import { CConversationSelect } from "../CConversationSelect";
 import { auth, firestore } from "@/setup/firebase";
+import { CConversationSelect, CDialog } from "@/components";
 import { Avatar, Button, IconButton, TextField, Tooltip } from "@mui/material";
 import styled from "styled-components";
 import ChatIcon from "@mui/icons-material/Chat";
@@ -13,6 +12,7 @@ import { z } from "zod";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { addDoc, collection, query, where } from "firebase/firestore";
 import { useCollection } from "react-firebase-hooks/firestore";
+import { toast } from "react-toastify";
 import type { Conversation } from "@/types";
 
 export const CSideBar = () => {
@@ -23,6 +23,8 @@ export const CSideBar = () => {
   const [recipientEmail, setRecipientEmail] = useState("");
 
   const isInvitingSelf = recipientEmail === loggedInUser?.email;
+
+  const isValidEmail = z.string().email().safeParse(recipientEmail).success;
 
   // check if conversation already exists between the current logged in user and recipient
   const queryGetConversationsForCurrentUser = query(
@@ -41,32 +43,38 @@ export const CSideBar = () => {
     try {
       await signOut(auth);
     } catch (error) {
+      toast.error("Error logging out");
       console.log("ERROR LOGGING OUT", error);
     }
   };
 
   const createConversation = async () => {
-    if (!recipientEmail) return;
+    setRecipientEmail("");
 
-    if (
-      z.string().email().safeParse(recipientEmail).success &&
-      !isInvitingSelf &&
-      !isConversationAlreadyExists(recipientEmail)
-    ) {
-      // Add conversation user to db "conversations" collection
-      // A conversation is between the currently logged in user and the user invited.
-
-      await addDoc(collection(firestore, "conversations"), {
-        users: [loggedInUser?.email, recipientEmail],
-      });
+    if (!recipientEmail) {
+      return;
     }
+
+    if (isInvitingSelf) {
+      toast.error("You can't invite yourself");
+      return;
+    }
+
+    if (!isValidEmail || isConversationAlreadyExists(recipientEmail)) {
+      toast.error("Invalid email address or conversation already exists");
+      return;
+    }
+
+    await addDoc(collection(firestore, "conversations"), {
+      users: [loggedInUser?.email, recipientEmail],
+    });
   };
 
   return (
     <StyledContainer>
       <StyledHeader>
-        <Tooltip title="user email" placement="right">
-          <StyledAvatar />
+        <Tooltip title={loggedInUser?.email} placement="right">
+          <StyledAvatar src={loggedInUser?.photoURL || ""} />
         </Tooltip>
 
         <div>
@@ -107,9 +115,15 @@ export const CSideBar = () => {
         title="New Conversation"
         actionText="Create"
         contentText="Please enter a Google email address for the user you wish to chat with"
-        isActionDisabled={!recipientEmail}
+        isActionDisabled={!recipientEmail || !isValidEmail}
         action={createConversation}
         onClose={() => setIsNewConversationDialogOpen(false)}
+        onKeyUp={(e) => {
+          if (e.key === "Enter") {
+            createConversation();
+            setIsNewConversationDialogOpen(false);
+          }
+        }}
       >
         <TextField
           autoFocus

@@ -12,11 +12,12 @@ export type CDialogProps = {
   contentText: string;
   children: React.ReactNode;
   actionText: string;
-  action: () => void;
-  onClose?: () => void;
   isActionDisabled: boolean;
   isOpen: boolean;
   closeText?: string;
+  action: () => void;
+  onClose?: () => void;
+  onKeyUp?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
 };
 
 export const CDialog: React.FC<CDialogProps> = ({
@@ -29,13 +30,14 @@ export const CDialog: React.FC<CDialogProps> = ({
   onClose,
   isOpen,
   closeText = "Cancel",
+  onKeyUp,
 }) => {
   const closeNewConversationDialog = () => {
     onClose?.();
   };
 
   return (
-    <Dialog open={isOpen} onClose={closeNewConversationDialog}>
+    <Dialog open={isOpen} onClose={closeNewConversationDialog} onKeyUp={onKeyUp}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{contentText}</DialogContentText>
