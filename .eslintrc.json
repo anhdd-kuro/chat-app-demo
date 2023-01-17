@@ -16,6 +16,12 @@
   ],
   "rules": {
     "prettier/prettier": "error",
+    "@typescript-eslint/consistent-type-imports": [
+      "error",{
+      "prefer": "type-imports",
+      "fixStyle": "separate-type-imports"
+     }
+    ],
     "@typescript-eslint/ban-ts-comment": "off",
     "import/no-anonymous-default-export": "off",
     "import/order": [
