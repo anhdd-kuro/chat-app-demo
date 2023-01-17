@@ -1,9 +1,9 @@
-import { AppUser, Conversation } from "../types";
 import { getRecipientEmail } from "@/utils";
 import { auth, firestore } from "@/setup/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection } from "react-firebase-hooks/firestore";
+import type { AppUser, Conversation } from "@/types";
 
 export const useRecipient = (conversationUsers: Conversation["users"]) => {
   const [loggedInUser] = useAuthState(auth);
