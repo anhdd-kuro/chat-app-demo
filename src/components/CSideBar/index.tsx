@@ -81,6 +81,7 @@ export const CSideBar = () => {
 
   return (
     <StyledContainer>
+      {/* Header */}
       <StyledHeader>
         <Tooltip title={loggedInUser?.email} placement="right">
           <StyledAvatar src={loggedInUser?.photoURL || ""} />
@@ -98,6 +99,8 @@ export const CSideBar = () => {
           </IconButton>
         </div>
       </StyledHeader>
+
+      {/* Search bar */}
       <StyledSearch>
         <SearchIcon />
         <StyledSearchInput
@@ -106,6 +109,7 @@ export const CSideBar = () => {
         />
       </StyledSearch>
 
+      {/* Start a new conversation */}
       <StyledSideBarButton
         onClick={() => {
           setIsNewConversationDialogOpen(true);
@@ -122,6 +126,8 @@ export const CSideBar = () => {
           conversationUsers={(conversation.data() as Conversation).users}
         />
       ))}
+
+      {/* New conversation dialog */}
       <CDialog
         isOpen={isNewConversationDialogOpen}
         title="New Conversation"
