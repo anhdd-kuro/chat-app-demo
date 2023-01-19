@@ -1,4 +1,4 @@
-import { Conversation, MessageSchema } from "@/types";
+import { Conversation, DBMessageSchema } from "@/types";
 import { auth, firestore } from "@/setup/firebase";
 import { generateQueryGetMessages, getRecipientEmail, transformMessage } from "@/utils";
 import { CConversationScreen, CSideBar } from "@/components";
@@ -62,8 +62,9 @@ export const getServerSideProps: GetServerSideProps<Props, { id: string }> = asy
 
   const messagesSnapshot = await getDocs(queryMessages);
 
-  const messagesDocs = messagesSnapshot.docs;
-  const parsedMessage = MessageSchema.array().safeParse(messagesDocs);
+  const messagesDocs = messagesSnapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+  const parsedMessage = DBMessageSchema.array().safeParse(messagesDocs);
+  console.log(parsedMessage);
 
   if (!parsedMessage.success)
     return {
@@ -72,10 +73,12 @@ export const getServerSideProps: GetServerSideProps<Props, { id: string }> = asy
       },
     };
 
+  const transformedMessages = parsedMessage.data.map((m) => transformMessage(m));
+
   return {
     props: {
       conversation: conversationSnapshot.data() as Conversation,
-      messages: parsedMessage.data.map((m) => transformMessage(m)),
+      messages: transformedMessages,
     },
   };
 };

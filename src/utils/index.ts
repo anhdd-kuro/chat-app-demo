@@ -1,6 +1,6 @@
 import { firestore } from "@/setup/firebase";
 import { collection, orderBy, query, where, Timestamp } from "firebase/firestore";
-import type { Conversation, IMessage } from "@/types";
+import type { Conversation, IDBMessage, IMessage } from "@/types";
 import type { User } from "firebase/auth";
 
 export const getRecipientEmail = (
@@ -15,10 +15,11 @@ export const generateQueryGetMessages = (conversationId?: string) =>
     orderBy("sent_at", "asc"),
   );
 
-export const transformMessage = (message: IMessage): IMessage => {
+export const transformMessage = (message: IDBMessage): IMessage => {
   return {
-    ...message,
-    sent_at: convertFirestoreTimestampToString(message.sent_at),
+    ...message.data,
+    id: message.id,
+    sent_at: convertFirestoreTimestampToString(message.data.sent_at),
   };
 };
 

@@ -7,7 +7,7 @@ import {
   generateQueryGetMessages,
   transformMessage,
 } from "@/utils";
-import { MessageSchema } from "@/types";
+import { DBMessageSchema } from "@/types";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useRouter } from "next/router";
@@ -46,8 +46,8 @@ export const CConversationScreen = ({
 
   const transformedMessages = useMemo(() => {
     if (!messagesSnapshot) return;
-    const messagesDocs = messagesSnapshot.docs;
-    const parsedMessage = MessageSchema.array().safeParse(messagesDocs);
+    const messagesDocs = messagesSnapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    const parsedMessage = DBMessageSchema.array().safeParse(messagesDocs);
 
     if (!parsedMessage.success) return;
 
@@ -129,9 +129,7 @@ export const CConversationScreen = ({
         {/* If front-end has finished loading messages, so now we have messagesSnapshot */}
         {!messagesLoading &&
           transformedMessages &&
-          transformedMessages.map((message) => (
-            <CMessage key={message.id} message={transformMessage(message)} />
-          ))}
+          transformedMessages.map((message) => <CMessage key={message.id} message={message} />)}
 
         {/* for auto scroll to the end when a new message is sent */}
         <EndOfMessagesForAutoScroll ref={endOfMessagesRef} />

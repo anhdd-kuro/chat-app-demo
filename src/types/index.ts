@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Timestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 export interface Conversation {
   users: string[];
@@ -10,6 +10,18 @@ export interface AppUser {
   lastSeen: Timestamp;
   photoURL: string;
 }
+
+export const DBMessageSchema = z.object({
+  id: z.string(),
+  data: z.object({
+    conversation_id: z.string(),
+    text: z.string(),
+    sent_at: z.instanceof(Timestamp),
+    user: z.string(),
+  }),
+});
+
+export interface IDBMessage extends z.infer<typeof DBMessageSchema> {}
 
 export const MessageSchema = z.object({
   id: z.string(),
