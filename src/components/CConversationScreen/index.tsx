@@ -43,22 +43,6 @@ export const CConversationScreen = ({
 
   const [messagesSnapshot, messagesLoading] = useCollection(queryGetMessages);
 
-  const showMessages = () => {
-    // If front-end is loading messages behind the scenes, display messages retrieved from Next SSR (passed down from [id].tsx)
-    if (messagesLoading) {
-      return messages.map((message) => <CMessage key={message.id} message={message} />);
-    }
-
-    // If front-end has finished loading messages, so now we have messagesSnapshot
-    if (messagesSnapshot) {
-      return messagesSnapshot.docs.map((message) => (
-        <CMessage key={message.id} message={transformMessage(message)} />
-      ));
-    }
-
-    return null;
-  };
-
   const addMessageToDbAndUpdateLastSeen = async () => {
     // update last seen in 'users' collection
     await setDoc(
@@ -127,7 +111,17 @@ export const CConversationScreen = ({
       </StyledRecipientHeader>
 
       <StyledMessageContainer>
-        {showMessages()}
+        {/* If front-end is loading messages behind the scenes, display messages retrieved from Next SSR (passed down from [id].tsx) */}
+        {messagesLoading &&
+          messages.map((message) => <CMessage key={message.id} message={message} />)}
+
+        {/* If front-end has finished loading messages, so now we have messagesSnapshot */}
+        {!messagesLoading &&
+          messagesSnapshot &&
+          messagesSnapshot.docs.map((message) => (
+            <CMessage key={message.id} message={transformMessage(message)} />
+          ))}
+
         {/* for auto scroll to the end when a new message is sent */}
         <EndOfMessagesForAutoScroll ref={endOfMessagesRef} />
       </StyledMessageContainer>
