@@ -23,6 +23,12 @@
      }
     ],
     "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-empty-interface": [
+      "error",
+      {
+        "allowSingleExtends": true
+      }
+    ],
     "import/no-anonymous-default-export": "off",
     "import/order": [
       "error",

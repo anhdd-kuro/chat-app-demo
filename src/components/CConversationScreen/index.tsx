@@ -7,6 +7,7 @@ import {
   generateQueryGetMessages,
   transformMessage,
 } from "@/utils";
+import { MessageSchema } from "@/types";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useRouter } from "next/router";
@@ -17,10 +18,10 @@ import IconButton from "@mui/material/IconButton";
 import InsertEmoticonIcon from "@mui/icons-material/InsertEmoticon";
 import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
-import type { KeyboardEventHandler, MouseEventHandler } from "react";
 import type { Conversation, IMessage } from "@/types";
+import type { KeyboardEventHandler, MouseEventHandler } from "react";
 
 export const CConversationScreen = ({
   conversation,
@@ -42,6 +43,16 @@ export const CConversationScreen = ({
   const queryGetMessages = generateQueryGetMessages(conversationId as string);
 
   const [messagesSnapshot, messagesLoading] = useCollection(queryGetMessages);
+
+  const transformedMessages = useMemo(() => {
+    if (!messagesSnapshot) return;
+    const messagesDocs = messagesSnapshot.docs;
+    const parsedMessage = MessageSchema.array().safeParse(messagesDocs);
+
+    if (!parsedMessage.success) return;
+
+    return parsedMessage.data.map((m) => transformMessage(m));
+  }, [messagesSnapshot]);
 
   const addMessageToDbAndUpdateLastSeen = async () => {
     // update last seen in 'users' collection
@@ -117,8 +128,8 @@ export const CConversationScreen = ({
 
         {/* If front-end has finished loading messages, so now we have messagesSnapshot */}
         {!messagesLoading &&
-          messagesSnapshot &&
-          messagesSnapshot.docs.map((message) => (
+          transformedMessages &&
+          transformedMessages.map((message) => (
             <CMessage key={message.id} message={transformMessage(message)} />
           ))}
 

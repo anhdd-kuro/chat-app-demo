@@ -1,6 +1,5 @@
 import { firestore } from "@/setup/firebase";
 import { collection, orderBy, query, where, Timestamp } from "firebase/firestore";
-import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import type { Conversation, IMessage } from "@/types";
 import type { User } from "firebase/auth";
 
@@ -16,17 +15,17 @@ export const generateQueryGetMessages = (conversationId?: string) =>
     orderBy("sent_at", "asc"),
   );
 
-export const transformMessage = (message: QueryDocumentSnapshot<DocumentData>) =>
-  ({
-    id: message.id,
-    ...message.data(), // spread out conversation_id, text, sent_at, user
-    sent_at: convertFirestoreTimestampToString(message.data().sent_at),
-  } as IMessage);
+export const transformMessage = (message: IMessage): IMessage => {
+  return {
+    ...message,
+    sent_at: convertFirestoreTimestampToString(message.sent_at),
+  };
+};
 
-export const convertFirestoreTimestampToString = (timestamp?: Timestamp | unknown) => {
-  if (!timestamp) return null;
+export const convertFirestoreTimestampToString = (timestamp: unknown) => {
+  if (!timestamp) return "";
 
-  if (!(timestamp instanceof Timestamp)) return null;
+  if (!(timestamp instanceof Timestamp)) return "";
 
   return new Date(timestamp.toDate().getTime()).toLocaleString();
 };

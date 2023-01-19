@@ -1,4 +1,4 @@
-import { Conversation } from "@/types";
+import { Conversation, MessageSchema } from "@/types";
 import { auth, firestore } from "@/setup/firebase";
 import { generateQueryGetMessages, getRecipientEmail, transformMessage } from "@/utils";
 import { CConversationScreen, CSideBar } from "@/components";
@@ -11,7 +11,7 @@ import type { IMessage } from "@/types";
 
 interface Props {
   conversation: Conversation;
-  messages: IMessage[];
+  messages?: IMessage[];
 }
 
 const StyledContainer = styled.div`
@@ -42,7 +42,7 @@ const Conversation = ({ conversation, messages }: Props) => {
       <CSideBar />
 
       <StyledConversationContainer>
-        <CConversationScreen conversation={conversation} messages={messages} />
+        {messages && <CConversationScreen conversation={conversation} messages={messages} />}
       </StyledConversationContainer>
     </StyledContainer>
   );
@@ -62,12 +62,20 @@ export const getServerSideProps: GetServerSideProps<Props, { id: string }> = asy
 
   const messagesSnapshot = await getDocs(queryMessages);
 
-  const messages = messagesSnapshot.docs.map((messageDoc) => transformMessage(messageDoc));
+  const messagesDocs = messagesSnapshot.docs;
+  const parsedMessage = MessageSchema.array().safeParse(messagesDocs);
+
+  if (!parsedMessage.success)
+    return {
+      props: {
+        conversation: conversationSnapshot.data() as Conversation,
+      },
+    };
 
   return {
     props: {
       conversation: conversationSnapshot.data() as Conversation,
-      messages,
+      messages: parsedMessage.data.map((m) => transformMessage(m)),
     },
   };
 };
