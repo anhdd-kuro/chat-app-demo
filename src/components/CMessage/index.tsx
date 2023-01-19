@@ -3,6 +3,20 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import styled from "styled-components";
 import type { IMessage } from "@/types";
 
+export const CMessage = ({ message }: { message: IMessage }) => {
+  const [loggedInUser] = useAuthState(auth);
+
+  const MessageType =
+    loggedInUser?.email === message.user ? StyledSenderMessage : StyledReceiverMessage;
+
+  return (
+    <MessageType>
+      {message.text}
+      <StyledTimestamp>{message.sent_at}</StyledTimestamp>
+    </MessageType>
+  );
+};
+
 const StyledMessage = styled.p`
   width: fit-content;
   word-break: break-all;
@@ -32,17 +46,3 @@ const StyledTimestamp = styled.span`
   right: 0;
   text-align: right;
 `;
-
-export const CMessage = ({ message }: { message: IMessage }) => {
-  const [loggedInUser] = useAuthState(auth);
-
-  const MessageType =
-    loggedInUser?.email === message.user ? StyledSenderMessage : StyledReceiverMessage;
-
-  return (
-    <MessageType>
-      {message.text}
-      <StyledTimestamp>{message.sent_at}</StyledTimestamp>
-    </MessageType>
-  );
-};
