@@ -1,8 +1,8 @@
 import { firestore } from "@/setup/firebase";
-import { collection, orderBy, query, where } from "firebase/firestore";
+import { collection, orderBy, query, where, Timestamp } from "firebase/firestore";
+import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import type { Conversation, IMessage } from "@/types";
 import type { User } from "firebase/auth";
-import type { DocumentData, QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
 
 export const getRecipientEmail = (
   conversationUsers: Conversation["users"],
@@ -20,10 +20,13 @@ export const transformMessage = (message: QueryDocumentSnapshot<DocumentData>) =
   ({
     id: message.id,
     ...message.data(), // spread out conversation_id, text, sent_at, user
-    sent_at: message.data().sent_at
-      ? convertFirestoreTimestampToString(message.data().sent_at as Timestamp)
-      : null,
+    sent_at: convertFirestoreTimestampToString(message.data().sent_at),
   } as IMessage);
 
-export const convertFirestoreTimestampToString = (timestamp: Timestamp) =>
-  new Date(timestamp.toDate().getTime()).toLocaleString();
+export const convertFirestoreTimestampToString = (timestamp?: Timestamp | unknown) => {
+  if (!timestamp) return null;
+
+  if (!(timestamp instanceof Timestamp)) return null;
+
+  return new Date(timestamp.toDate().getTime()).toLocaleString();
+};
