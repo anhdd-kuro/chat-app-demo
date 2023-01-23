@@ -1,28 +1,31 @@
 import { auth } from "@/setup/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import styled from "styled-components";
+import { Avatar } from "@mui/material";
 import type { IMessage } from "@/types";
 
-export const CMessage = ({ message }: { message: IMessage }) => {
+export const CMessage = ({ message, avatarUrl }: { message: IMessage; avatarUrl?: string }) => {
   const [loggedInUser] = useAuthState(auth);
 
-  const MessageType =
-    loggedInUser?.email === message.user ? StyledSenderMessage : StyledReceiverMessage;
+  const isLoggedUser = loggedInUser?.email === message.user;
+
+  const MessageType = isLoggedUser ? StyledSenderMessage : StyledReceiverMessage;
 
   return (
     <MessageType>
       {message.text}
       <StyledTimestamp>{message.sent_at}</StyledTimestamp>
+      {!isLoggedUser && <StyledAvatar src={avatarUrl} />}
     </MessageType>
   );
 };
 
-const StyledMessage = styled.p`
+const StyledMessage = styled.div`
   width: fit-content;
   word-break: break-all;
   max-width: 90%;
   min-width: 30%;
-  padding: 15px 15px 30px;
+  padding: 1.2rem 1.2rem 2rem;
   border-radius: 8px;
   margin: 10px;
   position: relative;
@@ -46,3 +49,18 @@ const StyledTimestamp = styled.span`
   right: 0;
   text-align: right;
 `;
+
+const StyledAvatarWrapper = styled.span`
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-80%, -50%);
+`;
+
+const StyledAvatar = ({ src }: { src?: string }) => {
+  return (
+    <StyledAvatarWrapper>
+      <Avatar src={src} />
+    </StyledAvatarWrapper>
+  );
+};

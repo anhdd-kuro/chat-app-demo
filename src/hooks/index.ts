@@ -1,4 +1,4 @@
-import { getRecipientEmail } from "@/utils";
+import { getRecipientEmails } from "@/utils";
 import { auth, firestore } from "@/setup/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -9,21 +9,22 @@ export const useRecipient = (conversationUsers: Conversation["users"]) => {
   const [loggedInUser] = useAuthState(auth);
 
   // get recipient email
-  const recipientEmail = getRecipientEmail(conversationUsers, loggedInUser);
+  const recipientEmails = getRecipientEmails(conversationUsers, loggedInUser);
 
   // get recipient avatar
-  const queryGetRecipient = query(
+  const queryGetRecipients = query(
     collection(firestore, "users"),
-    where("email", "==", recipientEmail),
+    where("email", "in", recipientEmails),
   );
-  const [recipientsSnapshot] = useCollection(queryGetRecipient);
+
+  const [recipientsSnapshot] = useCollection(queryGetRecipients);
 
   // recipientSnapshot?.docs could be an empty array, leading to docs[0] being undefined
   // so we have to force "?" after docs[0] because there is no data() on "undefined"
-  const recipient = recipientsSnapshot?.docs[0]?.data() as AppUser | undefined;
+  const recipients = recipientsSnapshot?.docs.map((doc) => doc?.data() as AppUser);
 
   return {
-    recipient,
-    recipientEmail,
+    recipients,
+    recipientEmails,
   };
 };

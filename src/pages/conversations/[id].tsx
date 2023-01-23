@@ -1,6 +1,6 @@
 import { Conversation, DBMessageSchema } from "@/types";
 import { auth, firestore } from "@/setup/firebase";
-import { generateQueryGetMessages, getRecipientEmail, transformMessage } from "@/utils";
+import { generateQueryGetMessages, getRecipientEmails, transformMessage } from "@/utils";
 import { CConversationScreen, CSideBar } from "@/components";
 import styled from "styled-components";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -36,7 +36,7 @@ const Conversation = ({ conversation, messages }: Props) => {
   return (
     <StyledContainer>
       <Head>
-        <title>Conversation with {getRecipientEmail(conversation.users, loggedInUser)}</title>
+        <title>Conversation with {getRecipientEmails(conversation.users, loggedInUser)}</title>
       </Head>
 
       <CSideBar />

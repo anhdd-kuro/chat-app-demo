@@ -3,10 +3,10 @@ import { collection, orderBy, query, where, Timestamp } from "firebase/firestore
 import type { Conversation, IDBMessage, IMessage } from "@/types";
 import type { User } from "firebase/auth";
 
-export const getRecipientEmail = (
+export const getRecipientEmails = (
   conversationUsers: Conversation["users"],
   loggedInUser?: User | null,
-) => conversationUsers.find((userEmail) => userEmail !== loggedInUser?.email);
+) => conversationUsers.filter((email) => email !== loggedInUser?.email);
 
 export const generateQueryGetMessages = (conversationId?: string) =>
   query(

@@ -35,7 +35,7 @@ export const CConversationScreen = ({
 
   const conversationUsers = conversation.users;
 
-  const { recipientEmail, recipient } = useRecipient(conversationUsers);
+  const { recipients } = useRecipient(conversationUsers);
 
   const router = useRouter();
   const conversationId = router.query.id; // localhost:3000/conversations/:id
@@ -102,14 +102,14 @@ export const CConversationScreen = ({
   return (
     <>
       <StyledRecipientHeader>
-        <CRecipientAvatar recipient={recipient} recipientEmail={recipientEmail} />
+        {/* <CRecipientAvatar recipient={recipient} recipientEmail={recipientEmail} />
 
         <StyledHeaderInfo>
           <StyledH3>{recipientEmail}</StyledH3>
           {recipient && (
             <span>Last active: {convertFirestoreTimestampToString(recipient.lastSeen)}</span>
           )}
-        </StyledHeaderInfo>
+        </StyledHeaderInfo> */}
 
         <StyledHeaderIcons>
           <IconButton>
@@ -123,13 +123,30 @@ export const CConversationScreen = ({
 
       <StyledMessageContainer>
         {/* If front-end is loading messages behind the scenes, display messages retrieved from Next SSR (passed down from [id].tsx) */}
-        {messagesLoading &&
-          messages.map((message) => <CMessage key={message.id} message={message} />)}
-
-        {/* If front-end has finished loading messages, so now we have messagesSnapshot */}
-        {!messagesLoading &&
-          transformedMessages &&
-          transformedMessages.map((message) => <CMessage key={message.id} message={message} />)}
+        {messagesLoading || !transformedMessages
+          ? messages.map((message) => (
+              <CMessage
+                key={message.id}
+                message={message}
+                avatarUrl={
+                  message.user === loggedInUser?.email && loggedInUser?.photoURL
+                    ? loggedInUser.photoURL
+                    : recipients?.find((user) => user.email === message.user)?.photoURL
+                }
+              />
+            ))
+          : // If front-end has finished loading messages, so now we have messagesSnapshot
+            transformedMessages.map((message) => (
+              <CMessage
+                key={message.id}
+                message={message}
+                avatarUrl={
+                  message.user === loggedInUser?.email && loggedInUser?.photoURL
+                    ? loggedInUser.photoURL
+                    : recipients?.find((user) => user.email === message.user)?.photoURL
+                }
+              />
+            ))}
 
         {/* for auto scroll to the end when a new message is sent */}
         <EndOfMessagesForAutoScroll ref={endOfMessagesRef} />

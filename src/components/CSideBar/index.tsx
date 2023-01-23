@@ -1,3 +1,4 @@
+import { CTag } from "../CTag";
 import { auth, firestore } from "@/setup/firebase";
 import { CConversationSelect, CDialog } from "@/components";
 import { Avatar, Button, IconButton, TextField, Tooltip } from "@mui/material";
@@ -6,7 +7,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import MoreVertical from "@mui/icons-material/MoreVert";
 import LogOutIcon from "@mui/icons-material/Logout";
 import SearchIcon from "@mui/icons-material/Search";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { signOut } from "firebase/auth";
 import { z } from "zod";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -20,13 +21,22 @@ export const CSideBar = () => {
 
   const [loggedInUser] = useAuthState(auth);
 
-  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientEmails, setRecipientEmails] = useState<string[]>([]);
+  const [currentlyTypingEmail, setCurrentlyTypingEmail] = useState("");
 
   const [searchConversationByEmail, setSearchConversationByEmail] = useState("");
 
-  const isInvitingSelf = recipientEmail === loggedInUser?.email;
+  const isInvitingSelf = currentlyTypingEmail === loggedInUser?.email;
 
-  const isValidEmail = z.string().email().safeParse(recipientEmail).success;
+  const isValidRecipientEmails = useMemo(
+    () => z.string().email().array().safeParse(recipientEmails).success,
+    [recipientEmails],
+  );
+
+  const isValidEmail = useCallback((email: string) => {
+    console.log(z.string().email().safeParse(email).success);
+    return z.string().email().safeParse(email).success;
+  }, []);
 
   // check if conversation already exists between the current logged in user and recipient
   const queryGetConversationsForCurrentUser = query(
@@ -43,39 +53,40 @@ export const CSideBar = () => {
     });
   }, [conversationsSnapshot, searchConversationByEmail]);
 
-  const isConversationAlreadyExists = (recipientEmail: string) =>
-    conversationsSnapshot?.docs.find((conversation) =>
-      (conversation.data() as Conversation).users.includes(recipientEmail),
-    );
+  const isConversationAlreadyExists = (recipientEmails: string[]) =>
+    conversationsSnapshot?.docs.find((conversation) => {
+      const currentUserInConversation = (conversation.data() as Conversation).users;
+      return (
+        currentUserInConversation.length === recipientEmails.length &&
+        currentUserInConversation.every((u) => recipientEmails.includes(u))
+      );
+    });
 
   const logout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
-      toast.error("Error logging out");
-      console.log("ERROR LOGGING OUT", error);
+      toast.error("Failed to logout");
+      console.error(error);
     }
   };
 
   const createConversation = async () => {
-    setRecipientEmail("");
+    setRecipientEmails([]);
 
-    if (!recipientEmail) {
+    if (recipientEmails.length === 0) {
+      toast.warning("Please add at least one email address");
       return;
     }
 
-    if (isInvitingSelf) {
-      toast.error("You can't invite yourself");
-      return;
-    }
-
-    if (!isValidEmail || isConversationAlreadyExists(recipientEmail)) {
+    if (!isValidRecipientEmails || isConversationAlreadyExists(recipientEmails)) {
       toast.error("Invalid email address or conversation already exists");
       return;
     }
 
     await addDoc(collection(firestore, "conversations"), {
-      users: [loggedInUser?.email, recipientEmail],
+      users: [loggedInUser?.email, ...recipientEmails],
+      typingUsers: [],
     });
   };
 
@@ -132,15 +143,13 @@ export const CSideBar = () => {
         isOpen={isNewConversationDialogOpen}
         title="New Conversation"
         actionText="Create"
-        contentText="Please enter a Google email address for the user you wish to chat with"
-        isActionDisabled={!recipientEmail || !isValidEmail}
+        contentText="Please enter a gmail address then press enter to add users you wish to chat with"
+        isActionDisabled={recipientEmails.length === 0 || !isValidRecipientEmails}
         action={createConversation}
-        onClose={() => setIsNewConversationDialogOpen(false)}
-        onKeyUp={(e) => {
-          if (e.key === "Enter") {
-            createConversation();
-            setIsNewConversationDialogOpen(false);
-          }
+        onClose={() => {
+          setIsNewConversationDialogOpen(false);
+          setRecipientEmails([]);
+          setCurrentlyTypingEmail("");
         }}
       >
         <TextField
@@ -149,15 +158,58 @@ export const CSideBar = () => {
           type="email"
           fullWidth
           variant="standard"
-          value={recipientEmail}
-          onChange={(event) => {
-            setRecipientEmail(event.target.value);
+          value={currentlyTypingEmail}
+          onKeyUp={(e) => {
+            if (e.key !== "Enter") return;
+
+            if (!isValidEmail(currentlyTypingEmail)) {
+              toast.error("Invalid email address");
+              return;
+            }
+
+            if (isInvitingSelf) {
+              toast.error("You can't invite yourself");
+              return;
+            }
+
+            if (recipientEmails.includes(currentlyTypingEmail)) {
+              toast.warning("Email already added");
+              return;
+            }
+
+            setRecipientEmails((curVal) => {
+              return [...curVal, currentlyTypingEmail];
+            });
+            setCurrentlyTypingEmail("");
           }}
+          onChange={(e) => setCurrentlyTypingEmail(e.target.value)}
         />
+        {recipientEmails.length > 0 && (
+          <StyledEmailTagsContainer>
+            {recipientEmails.map((email) => (
+              <CTag
+                key={email}
+                label={email}
+                onDelete={() => {
+                  setRecipientEmails((curVal) => {
+                    return curVal.filter((e) => e !== email);
+                  });
+                }}
+              />
+            ))}
+          </StyledEmailTagsContainer>
+        )}
       </CDialog>
     </StyledContainer>
   );
 };
+
+const StyledEmailTagsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+`;
 
 const StyledContainer = styled.div`
   height: 100vh;
