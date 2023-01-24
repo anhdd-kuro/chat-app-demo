@@ -2,11 +2,7 @@ import { CMessage } from "../CMessage";
 import { CRecipientAvatar } from "../CRecipientAvatar";
 import { auth, firestore } from "@/setup/firebase";
 import { useRecipient } from "@/hooks";
-import {
-  convertFirestoreTimestampToString,
-  generateQueryGetMessages,
-  transformMessage,
-} from "@/utils";
+import { generateQueryGetMessages, transformMessage } from "@/utils";
 import { DBMessageSchema } from "@/types";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -20,6 +16,7 @@ import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
 import { useMemo, useRef, useState } from "react";
 import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { Avatar, Tooltip } from "@mui/material";
 import type { Conversation, IMessage } from "@/types";
 import type { KeyboardEventHandler, MouseEventHandler } from "react";
 
@@ -98,18 +95,32 @@ export const CConversationScreen = ({
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const recipientCountLimit = 7;
+
   return (
     <>
       <StyledRecipientHeader>
-        {/* <CRecipientAvatar recipient={recipient} recipientEmail={recipientEmail} />
-
-        <StyledHeaderInfo>
-          <StyledH3>{recipientEmail}</StyledH3>
-          {recipient && (
-            <span>Last active: {convertFirestoreTimestampToString(recipient.lastSeen)}</span>
+        <StyledRecipients>
+          {recipients && (
+            <>
+              {recipients.slice(0, recipientCountLimit).map((recipient) => (
+                <CRecipientAvatar key={recipient.email} recipient={recipient} />
+              ))}
+              {recipients.length > recipientCountLimit && (
+                <>
+                  <Tooltip
+                    title={recipients
+                      .slice(recipientCountLimit, recipients.length)
+                      .flatMap((u) => u.email)
+                      .join(", ")}
+                  >
+                    <Avatar>+{recipients.length - recipientCountLimit}</Avatar>
+                  </Tooltip>
+                </>
+              )}
+            </>
           )}
-        </StyledHeaderInfo> */}
-
+        </StyledRecipients>
         <StyledHeaderIcons>
           <IconButton>
             <AttachFileIcon />
@@ -182,22 +193,15 @@ const StyledRecipientHeader = styled.div`
   border-bottom: 1px solid whitesmoke;
 `;
 
-const StyledHeaderInfo = styled.div`
-  flex-grow: 1;
+const StyledRecipients = styled.div`
+  display: flex;
+  gap: 0 5px;
+  margin-right: auto;
 
-  > h3 {
-    margin-top: 0;
-    margin-bottom: 3px;
+  > * {
+    width: 2.5rem;
+    height: 2.5rem;
   }
-
-  > span {
-    font-size: 14px;
-    color: gray;
-  }
-`;
-
-const StyledH3 = styled.h3`
-  word-break: break-all;
 `;
 
 const StyledHeaderIcons = styled.div`
