@@ -8,13 +8,19 @@ type Props = {
 };
 
 const StyledAvatar = styled(Avatar)`
-  margin: 5px 15px 5px 5px;
+  line-height: 0;
+  font-size: 0.8em;
+  font-weight: 700;
 `;
 
 export const CRecipientAvatar = ({ recipient }: Props) => {
   return (
     <Tooltip title={recipient.email}>
-      <StyledAvatar src={recipient.photoURL} />
+      {recipient.photoURL ? (
+        <StyledAvatar src={recipient.photoURL} />
+      ) : (
+        <StyledAvatar>{recipient.email[0].toUpperCase()}</StyledAvatar>
+      )}
     </Tooltip>
   );
 };

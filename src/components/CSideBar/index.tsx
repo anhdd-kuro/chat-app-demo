@@ -105,9 +105,11 @@ export const CSideBar = () => {
           <IconButton>
             <MoreVertical />
           </IconButton>
-          <IconButton onClick={logout}>
-            <LogOutIcon />
-          </IconButton>
+          <Tooltip title="Logout" placement="right">
+            <IconButton onClick={logout}>
+              <LogOutIcon />
+            </IconButton>
+          </Tooltip>
         </div>
       </StyledHeader>
 
@@ -243,6 +245,7 @@ const StyledHeader = styled.div`
   top: 0;
   background-color: white;
   z-index: 1;
+  height: 75px;
 
   > div {
     display: flex;

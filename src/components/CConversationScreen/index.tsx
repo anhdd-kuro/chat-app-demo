@@ -94,7 +94,6 @@ export const CConversationScreen = ({
   };
 
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
-
   const scrollToBottom = () => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -179,7 +178,7 @@ const StyledRecipientHeader = styled.div`
   display: flex;
   align-items: center;
   padding: 11px;
-  height: 80px;
+  height: 75px;
   border-bottom: 1px solid whitesmoke;
 `;
 

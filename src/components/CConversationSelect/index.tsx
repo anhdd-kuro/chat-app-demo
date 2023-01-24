@@ -70,12 +70,17 @@ const StyledContainer = styled.div`
 const StyledAvatars = styled.div`
   display: flex;
   align-items: center;
-  margin-right: 10px;
+  margin-right: 0.8rem;
 
   > * {
     margin: 0;
+    width: 2.2rem;
+    height: 2.2rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+
     :not(:first-child) {
-      margin-left: -1.6rem;
+      margin-left: -1rem;
     }
   }
 `;
