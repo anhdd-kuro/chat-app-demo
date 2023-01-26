@@ -149,6 +149,12 @@ export const CConversationScreen = ({
 
   useEffect(() => {
     typingUsersIntervalCheck.current = setInterval(() => {
+      if (!typingUsersIntervalCheck.current) return;
+      if (!navigator?.onLine) {
+        clearInterval(typingUsersIntervalCheck.current);
+        return;
+      }
+
       if (!conversationSnapshot) return;
       const conversationData = conversationSnapshot.data() as Conversation | undefined;
 
@@ -166,7 +172,7 @@ export const CConversationScreen = ({
         nowTimeStamp - loggedUserTimeStamp > TYPING_TIMEOUT
       )
         handleTypingStatus("");
-    }, 30 * 1000); // 30 seconds
+    }, 1 * 1000); // 30 seconds
 
     return () => {
       clearInterval(typingUsersIntervalCheck.current as NodeJS.Timeout);
