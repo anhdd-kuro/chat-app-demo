@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Timestamp } from "firebase/firestore";
 
 export interface Conversation {
+  typingUsers: TypingUser[];
   users: string[];
 }
 
@@ -9,6 +10,11 @@ export interface AppUser {
   email: string;
   lastSeen: Timestamp;
   photoURL: string;
+}
+
+export interface TypingUser {
+  email: string;
+  timestamp: number;
 }
 
 export const DBMessageSchema = z.object({

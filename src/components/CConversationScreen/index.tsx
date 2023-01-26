@@ -8,17 +8,20 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useRouter } from "next/router";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useCollection } from "react-firebase-hooks/firestore";
+import { useCollection, useDocument } from "react-firebase-hooks/firestore";
 import styled from "styled-components";
 import IconButton from "@mui/material/IconButton";
 import InsertEmoticonIcon from "@mui/icons-material/InsertEmoticon";
 import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Avatar, Tooltip } from "@mui/material";
+import { DebounceInput } from "react-debounce-input";
 import type { Conversation, IMessage } from "@/types";
 import type { KeyboardEventHandler, MouseEventHandler } from "react";
+
+const TYPING_TIMEOUT = 20 * 1000; // 20 seconds
 
 export const CConversationScreen = ({
   conversation,
@@ -28,6 +31,8 @@ export const CConversationScreen = ({
   messages: IMessage[];
 }) => {
   const [newMessage, setNewMessage] = useState("");
+  const lastMessageRef = useRef<string>("");
+
   const [loggedInUser] = useAuthState(auth);
 
   const conversationUsers = conversation.users;
@@ -36,6 +41,9 @@ export const CConversationScreen = ({
 
   const router = useRouter();
   const conversationId = router.query.id; // localhost:3000/conversations/:id
+
+  const conversationRef = doc(firestore, "conversations", conversationId as string);
+  const [conversationSnapshot] = useDocument(conversationRef);
 
   const queryGetMessages = generateQueryGetMessages(conversationId as string);
 
@@ -50,6 +58,25 @@ export const CConversationScreen = ({
 
     return parsedMessage.data.map((m) => transformMessage(m));
   }, [messagesSnapshot]);
+
+  const otherUsersTyping = useMemo(() => {
+    if (!conversationSnapshot) return;
+    const conversationData = conversationSnapshot.data() as Conversation | undefined;
+
+    if (!conversationData) return;
+
+    return conversationData.typingUsers.filter((user) => user.email !== loggedInUser?.email);
+  }, [conversationSnapshot, loggedInUser?.email]);
+
+  const typingUsersWithinTimeout = useMemo(() => {
+    if (!otherUsersTyping) return;
+
+    const nowTimeStamp = new Date().getTime();
+
+    return otherUsersTyping.filter((user) => nowTimeStamp - user.timestamp < TYPING_TIMEOUT);
+  }, [otherUsersTyping]);
+
+  const typingUsersIntervalCheck = useRef<NodeJS.Timeout | null>(null);
 
   const addMessageToDbAndUpdateLastSeen = async () => {
     // update last seen in 'users' collection
@@ -76,17 +103,97 @@ export const CConversationScreen = ({
     scrollToBottom();
   };
 
+  const handleTypingStatus = useCallback(
+    async (message: string) => {
+      if (!conversationSnapshot) return;
+      const conversationData = conversationSnapshot.data() as Conversation | undefined;
+
+      if (!conversationData) return;
+
+      const typingUserExcludeLoggedUser = conversationData.typingUsers?.filter(
+        (user) => user.email !== loggedInUser?.email,
+      );
+
+      const currentUser = typingUserExcludeLoggedUser?.find((u) => u.email === loggedInUser?.email);
+      const currentUserTimeStamp = currentUser?.timestamp;
+
+      const nowTimeStamp = new Date().getTime();
+
+      if (
+        !message ||
+        (currentUserTimeStamp && nowTimeStamp - currentUserTimeStamp > TYPING_TIMEOUT)
+      ) {
+        await setDoc(
+          conversationRef,
+          {
+            typingUsers: typingUserExcludeLoggedUser,
+          },
+          { merge: true }, // just update what is changed
+        );
+        return;
+      }
+
+      await setDoc(
+        conversationRef,
+        {
+          typingUsers: [
+            ...typingUserExcludeLoggedUser,
+            { email: loggedInUser?.email as string, timestamp: nowTimeStamp },
+          ],
+        },
+        { merge: true }, // just update what is changed
+      );
+    },
+    [conversationSnapshot, conversationRef, loggedInUser?.email],
+  );
+
+  useEffect(() => {
+    typingUsersIntervalCheck.current = setInterval(() => {
+      if (!conversationSnapshot) return;
+      const conversationData = conversationSnapshot.data() as Conversation | undefined;
+
+      if (!conversationData) return;
+      const loggedUserInTypingUsers = conversationData.typingUsers?.find(
+        (u) => u.email === loggedInUser?.email,
+      );
+      if (!loggedUserInTypingUsers) return;
+
+      const nowTimeStamp = new Date().getTime();
+      const loggedUserTimeStamp = loggedUserInTypingUsers.timestamp;
+      if (
+        lastMessageRef.current === newMessage &&
+        loggedUserTimeStamp &&
+        nowTimeStamp - loggedUserTimeStamp > TYPING_TIMEOUT
+      )
+        handleTypingStatus("");
+    }, 30 * 1000); // 30 seconds
+
+    return () => {
+      clearInterval(typingUsersIntervalCheck.current as NodeJS.Timeout);
+    };
+  }, [conversationSnapshot, loggedInUser?.email, newMessage, handleTypingStatus]);
+
+  const handleOnTyping = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(event.target.value);
+    lastMessageRef.current = event.target.value;
+    handleTypingStatus(event.target.value);
+  };
+
   const sendMessageOnEnter: KeyboardEventHandler<HTMLInputElement> = (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      if (!newMessage) return;
-      addMessageToDbAndUpdateLastSeen();
-    }
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+
+    if (!newMessage) return;
+
+    addMessageToDbAndUpdateLastSeen();
   };
 
   const sendMessageOnClick: MouseEventHandler<HTMLButtonElement> = (event) => {
     event.preventDefault();
+
     if (!newMessage) return;
+
     addMessageToDbAndUpdateLastSeen();
   };
 
@@ -98,7 +205,7 @@ export const CConversationScreen = ({
   const recipientCountLimit = 7;
 
   return (
-    <>
+    <StyledWrapper>
       <StyledRecipientHeader>
         <StyledRecipients>
           {recipients && (
@@ -162,13 +269,20 @@ export const CConversationScreen = ({
         <EndOfMessagesForAutoScroll ref={endOfMessagesRef} />
       </StyledMessageContainer>
 
+      {typingUsersWithinTimeout && typingUsersWithinTimeout.length > 0 && (
+        <StyledTypingUsers>
+          {typingUsersWithinTimeout.map((u) => u.email).join(", ")} are typing...
+        </StyledTypingUsers>
+      )}
+
       {/* Enter new message */}
       <StyledInputContainer>
         <InsertEmoticonIcon />
-        <StyledInput
+        <StyledDebounceInput
           value={newMessage}
-          onChange={(event) => setNewMessage(event.target.value)}
+          onChange={handleOnTyping}
           onKeyDown={sendMessageOnEnter}
+          debounceTimeout={300}
         />
         <IconButton onClick={sendMessageOnClick} disabled={!newMessage}>
           <SendIcon />
@@ -177,9 +291,21 @@ export const CConversationScreen = ({
           <MicIcon />
         </IconButton>
       </StyledInputContainer>
-    </>
+    </StyledWrapper>
   );
 };
+
+const StyledWrapper = styled.div`
+  background-color: #e5ded8;
+`;
+
+const StyledTypingUsers = styled.div`
+  position: sticky;
+  bottom: 80px;
+  padding: 0 1rem;
+  text-align: right;
+  font-style: italic;
+`;
 
 const StyledRecipientHeader = styled.div`
   position: sticky;
@@ -224,7 +350,7 @@ const StyledInputContainer = styled.form`
   z-index: 100;
 `;
 
-const StyledInput = styled.input`
+const StyledDebounceInput = styled(DebounceInput)`
   flex-grow: 1;
   outline: none;
   border: none;
